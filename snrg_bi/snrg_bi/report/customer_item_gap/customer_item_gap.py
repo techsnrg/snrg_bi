@@ -1,5 +1,6 @@
 import frappe
 from frappe import _
+from frappe.utils import add_months
 
 
 def execute(filters=None):
@@ -25,6 +26,17 @@ def validate_filters(filters):
     if filters.get("buyers_only") and filters.get("opportunities_only"):
         frappe.throw(_("Select either Buyers Only or Opportunities Only, not both"))
 
+    if not filters.get("dropped_lookback_months"):
+        filters.dropped_lookback_months = 12
+
+    try:
+        filters.dropped_lookback_months = int(filters.dropped_lookback_months)
+    except (TypeError, ValueError):
+        frappe.throw(_("Dropped Lookback must be a valid month count"))
+
+    if filters.dropped_lookback_months not in (1, 2, 3, 6, 9, 12):
+        frappe.throw(_("Dropped Lookback must be 1, 2, 3, 6, 9, or 12 months"))
+
 
 def get_columns():
     return [
@@ -46,6 +58,7 @@ def get_columns():
 
 def get_data(filters):
     conditions, params = get_customer_conditions(filters)
+    params["dropped_from_date"] = add_months(filters.from_date, -filters.dropped_lookback_months)
 
     query = f"""
         SELECT
@@ -63,7 +76,7 @@ def get_data(filters):
             other_items.other_items_bought,
             CASE
                 WHEN item_sales.qty_bought > 0 THEN 'Buyer'
-                WHEN prior_sales.last_purchase_date IS NOT NULL THEN 'Dropped'
+                WHEN prior_sales.last_purchase_date IS NOT NULL THEN 'Stopped Buying'
                 ELSE 'Opportunity'
             END AS status
         FROM `tabCustomer` c
@@ -119,6 +132,7 @@ def get_data(filters):
                 si.docstatus = 1
                 AND COALESCE(si.is_return, 0) = 0
                 AND si.company = %(company)s
+                AND si.posting_date >= %(dropped_from_date)s
                 AND si.posting_date < %(from_date)s
                 AND sii.item_code = %(item_code)s
             GROUP BY si.customer
@@ -188,7 +202,7 @@ def get_customer_conditions(filters):
 def get_summary(data):
     buyers = len([row for row in data if row.get("bought_item") == "Yes"])
     opportunities = len([row for row in data if row.get("status") == "Opportunity"])
-    dropped = len([row for row in data if row.get("status") == "Dropped"])
+    stopped_buying = len([row for row in data if row.get("status") == "Stopped Buying"])
     total_qty = sum(row.get("qty_bought") or 0 for row in data)
     total_value = sum(row.get("sales_value") or 0 for row in data)
 
@@ -196,7 +210,7 @@ def get_summary(data):
         {"label": _("Customers"), "value": len(data), "indicator": "Blue", "datatype": "Int"},
         {"label": _("Buyers"), "value": buyers, "indicator": "Green", "datatype": "Int"},
         {"label": _("Opportunities"), "value": opportunities, "indicator": "Orange", "datatype": "Int"},
-        {"label": _("Dropped"), "value": dropped, "indicator": "Red", "datatype": "Int"},
+        {"label": _("Stopped Buying"), "value": stopped_buying, "indicator": "Red", "datatype": "Int"},
         {"label": _("Qty Bought"), "value": total_qty, "indicator": "Blue", "datatype": "Float"},
         {"label": _("Sales Value"), "value": total_value, "indicator": "Green", "datatype": "Currency"},
     ]

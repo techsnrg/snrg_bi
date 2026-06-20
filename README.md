@@ -50,6 +50,14 @@ This lets a future chat/AI interface call trusted report tools such as:
 
 The AI layer should call these approved tools rather than querying raw ERPNext tables directly.
 
+## Customer Item Gap Status Logic
+
+- `Buyer`: bought the selected item during the selected report period.
+- `Stopped Buying`: did not buy the selected item during the report period, but bought it within the selected dropped lookback window before the report period.
+- `Opportunity`: did not buy the selected item during the report period and did not buy it within the selected dropped lookback window.
+
+The dropped lookback window supports 1, 2, 3, 6, 9, or 12 months. This prevents very old purchases from years ago being treated as current dropped customers.
+
 ## Frappe Cloud Deployment
 
 This app is scaffolded as a standard Frappe Cloud-friendly app:

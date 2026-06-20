@@ -58,6 +58,20 @@ frappe.query_reports["Customer Item Gap"] = {
       options: "Sales Person",
     },
     {
+      fieldname: "dropped_lookback_months",
+      label: __("Dropped Lookback"),
+      fieldtype: "Select",
+      options: [
+        { value: "1", label: __("Last 1 Month") },
+        { value: "2", label: __("Last 2 Months") },
+        { value: "3", label: __("Last 3 Months") },
+        { value: "6", label: __("Last 6 Months") },
+        { value: "9", label: __("Last 9 Months") },
+        { value: "12", label: __("Last 1 Year") },
+      ],
+      default: "12",
+    },
+    {
       fieldname: "active_customers_only",
       label: __("Active Customers Only"),
       fieldtype: "Check",
@@ -77,4 +91,3 @@ frappe.query_reports["Customer Item Gap"] = {
     },
   ],
 };
-
