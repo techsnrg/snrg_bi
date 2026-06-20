@@ -262,9 +262,18 @@ def _ensure_workspace():
     if frappe.db.exists("Workspace", workspace_name):
         workspace = frappe.get_doc("Workspace", workspace_name)
         for key, value in doc.items():
-            if key == "doctype":
+            if key in ("doctype", "links", "shortcuts"):
                 continue
             setattr(workspace, key, value)
+
+        workspace.set("links", [])
+        for link in links:
+            workspace.append("links", link)
+
+        workspace.set("shortcuts", [])
+        for shortcut in workspace_shortcuts:
+            workspace.append("shortcuts", shortcut)
+
         workspace.save(ignore_permissions=True)
         return
 
