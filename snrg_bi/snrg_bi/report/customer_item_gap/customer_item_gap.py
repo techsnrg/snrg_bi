@@ -23,8 +23,17 @@ def validate_filters(filters):
     if filters.from_date > filters.to_date:
         frappe.throw(_("From Date cannot be after To Date"))
 
-    if filters.get("buyers_only") and filters.get("opportunities_only"):
-        frappe.throw(_("Select either Buyers Only or Opportunities Only, not both"))
+    selected_status_filters = [
+        label
+        for label, fieldname in (
+            (_("Buyers Only"), "buyers_only"),
+            (_("Stopped Buying Only"), "stopped_buying_only"),
+            (_("Opportunities Only"), "opportunities_only"),
+        )
+        if filters.get(fieldname)
+    ]
+    if len(selected_status_filters) > 1:
+        frappe.throw(_("Select only one status filter: {0}").format(", ".join(selected_status_filters)))
 
     if not filters.get("dropped_lookback_months"):
         filters.dropped_lookback_months = 12
@@ -193,8 +202,13 @@ def get_customer_conditions(filters):
     if filters.get("buyers_only"):
         conditions.append("COALESCE(item_sales.qty_bought, 0) > 0")
 
+    if filters.get("stopped_buying_only"):
+        conditions.append("COALESCE(item_sales.qty_bought, 0) = 0")
+        conditions.append("prior_sales.last_purchase_date IS NOT NULL")
+
     if filters.get("opportunities_only"):
         conditions.append("COALESCE(item_sales.qty_bought, 0) = 0")
+        conditions.append("prior_sales.last_purchase_date IS NULL")
 
     return " AND ".join(conditions), params
 

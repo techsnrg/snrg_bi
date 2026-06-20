@@ -84,6 +84,12 @@ frappe.query_reports["Customer Item Gap"] = {
       default: 0,
     },
     {
+      fieldname: "stopped_buying_only",
+      label: __("Stopped Buying Only"),
+      fieldtype: "Check",
+      default: 0,
+    },
+    {
       fieldname: "opportunities_only",
       label: __("Opportunities Only"),
       fieldtype: "Check",
