@@ -35,5 +35,6 @@
     {"color": "Blue", "label": "Dropped Item Customers", "link_to": "Dropped Item Customers", "type": "Report"},
     {"color": "Blue", "label": "Item Penetration by City", "link_to": "Item Penetration by City", "type": "Report"},
     {"color": "Blue", "label": "Salesperson Item Opportunities", "link_to": "Salesperson Item Opportunities", "type": "Report"}
-  ]
+  ],
+  "title": "SNRG BI"
 }

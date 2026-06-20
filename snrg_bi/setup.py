@@ -248,6 +248,7 @@ def _ensure_workspace():
         "doctype": "Workspace",
         "name": workspace_name,
         "label": workspace_name,
+        "title": workspace_name,
         "module": MODULE_NAME,
         "category": "Modules",
         "icon": "bar-chart",
