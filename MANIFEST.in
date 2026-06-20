@@ -1,0 +1,6 @@
+include README.md
+include snrg_bi/modules.txt
+include snrg_bi/patches.txt
+recursive-include snrg_bi *.json
+recursive-include snrg_bi *.js
+recursive-include snrg_bi *.py

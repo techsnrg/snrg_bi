@@ -1,0 +1,39 @@
+{
+  "category": "Modules",
+  "charts": [],
+  "content": "[{\"id\":\"snrg_bi_header\",\"type\":\"header\",\"data\":{\"text\":\"SNRG BI\",\"col\":12}},{\"id\":\"customer_item_gap_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer Item Gap\",\"col\":3}},{\"id\":\"customer_basket_gap_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer Basket Gap\",\"col\":3}},{\"id\":\"dropped_item_customers_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dropped Item Customers\",\"col\":3}},{\"id\":\"item_penetration_by_city_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Penetration by City\",\"col\":3}},{\"id\":\"salesperson_item_opportunities_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Salesperson Item Opportunities\",\"col\":3}}]",
+  "creation": "2026-06-20 00:00:00.000000",
+  "developer_mode_only": 0,
+  "disable_user_customization": 0,
+  "doctype": "Workspace",
+  "extends": "",
+  "extends_another_page": 0,
+  "hide_custom": 0,
+  "icon": "bar-chart",
+  "is_default": 0,
+  "is_hidden": 0,
+  "label": "SNRG BI",
+  "links": [
+    {"dependencies": "", "hidden": 0, "is_query_report": 0, "label": "Sales Reports", "link_count": 0, "onboard": 0, "type": "Card Break"},
+    {"dependencies": "", "hidden": 0, "is_query_report": 0, "label": "Customer Item Gap", "link_count": 0, "link_to": "Customer Item Gap", "link_type": "Report", "onboard": 1, "type": "Link"},
+    {"dependencies": "", "hidden": 0, "is_query_report": 0, "label": "Customer Basket Gap", "link_count": 0, "link_to": "Customer Basket Gap", "link_type": "Report", "onboard": 1, "type": "Link"},
+    {"dependencies": "", "hidden": 0, "is_query_report": 0, "label": "Dropped Item Customers", "link_count": 0, "link_to": "Dropped Item Customers", "link_type": "Report", "onboard": 1, "type": "Link"},
+    {"dependencies": "", "hidden": 0, "is_query_report": 0, "label": "Item Penetration by City", "link_count": 0, "link_to": "Item Penetration by City", "link_type": "Report", "onboard": 1, "type": "Link"},
+    {"dependencies": "", "hidden": 0, "is_query_report": 0, "label": "Salesperson Item Opportunities", "link_count": 0, "link_to": "Salesperson Item Opportunities", "link_type": "Report", "onboard": 1, "type": "Link"}
+  ],
+  "modified": "2026-06-20 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "SNRG BI",
+  "name": "SNRG BI",
+  "owner": "Administrator",
+  "public": 1,
+  "restrict_to_domain": "",
+  "roles": [],
+  "shortcuts": [
+    {"color": "Blue", "label": "Customer Item Gap", "link_to": "Customer Item Gap", "type": "Report"},
+    {"color": "Blue", "label": "Customer Basket Gap", "link_to": "Customer Basket Gap", "type": "Report"},
+    {"color": "Blue", "label": "Dropped Item Customers", "link_to": "Dropped Item Customers", "type": "Report"},
+    {"color": "Blue", "label": "Item Penetration by City", "link_to": "Item Penetration by City", "type": "Report"},
+    {"color": "Blue", "label": "Salesperson Item Opportunities", "link_to": "Salesperson Item Opportunities", "type": "Report"}
+  ]
+}
