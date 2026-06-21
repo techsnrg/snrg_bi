@@ -59,7 +59,7 @@ def get_columns():
         {"label": _("Bought Item"), "fieldname": "bought_item", "fieldtype": "Data", "width": 100},
         {"label": _("Qty Bought"), "fieldname": "qty_bought", "fieldtype": "Float", "width": 110},
         {"label": _("Sales Value"), "fieldname": "sales_value", "fieldtype": "Currency", "width": 130},
-        {"label": _("Last Purchase Date"), "fieldname": "last_purchase_date", "fieldtype": "Date", "width": 140},
+        {"label": _("Last Item Purchase Date"), "fieldname": "last_purchase_date", "fieldtype": "Date", "width": 160},
         {"label": _("Other Items Bought"), "fieldname": "other_items_bought", "fieldtype": "Data", "width": 260},
         {"label": _("Status"), "fieldname": "status", "fieldtype": "Data", "width": 120},
     ]
@@ -81,7 +81,7 @@ def get_data(filters):
             CASE WHEN item_sales.qty_bought > 0 THEN 'Yes' ELSE 'No' END AS bought_item,
             COALESCE(item_sales.qty_bought, 0) AS qty_bought,
             COALESCE(item_sales.sales_value, 0) AS sales_value,
-            item_sales.last_purchase_date,
+            COALESCE(item_sales.last_purchase_date, prior_sales.last_purchase_date) AS last_purchase_date,
             other_items.other_items_bought,
             CASE
                 WHEN item_sales.qty_bought > 0 THEN 'Buyer'
