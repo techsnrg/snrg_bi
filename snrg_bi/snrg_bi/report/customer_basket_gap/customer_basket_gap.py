@@ -5,6 +5,10 @@ from frappe import _
 def execute(filters=None):
     filters = frappe._dict(filters or {})
     validate_filters(filters)
+    missing_target_message = get_missing_target_message(filters)
+    if missing_target_message:
+        return get_columns(), [], missing_target_message, None, []
+
     data = get_data(filters)
     return get_columns(), data, None, None, get_summary(data)
 
@@ -24,13 +28,10 @@ def validate_filters(filters):
     if missing:
         frappe.throw(_("Missing required filters: {0}").format(", ".join(missing)))
 
-    validate_target(filters, "has")
-    validate_target(filters, "missing")
-
     if filters.from_date > filters.to_date:
         frappe.throw(_("From Date cannot be after To Date"))
 
-    if get_target_identity(filters, "has") == get_target_identity(filters, "missing"):
+    if not get_missing_target_message(filters) and get_target_identity(filters, "has") == get_target_identity(filters, "missing"):
         frappe.throw(_("Buys Target and Missing Target must be different"))
 
 
@@ -149,13 +150,19 @@ def get_customer_conditions(filters):
     return " AND ".join(conditions), params
 
 
-def validate_target(filters, prefix):
-    target_type = filters.get(f"{prefix}_target_type")
-    if target_type == "Item" and not filters.get(f"{prefix}_item_code"):
-        frappe.throw(_("{0} Item is required").format(prefix.title()))
+def get_missing_target_message(filters):
+    missing = []
+    for prefix, label in (("has", _("Buys Target")), ("missing", _("Missing Target"))):
+        target_type = filters.get(f"{prefix}_target_type")
+        if target_type == "Item" and not filters.get(f"{prefix}_item_code"):
+            missing.append(_("{0} Item").format(label))
+        elif target_type == "Item Group" and not filters.get(f"{prefix}_item_group"):
+            missing.append(_("{0} Item Group").format(label))
 
-    if target_type == "Item Group" and not filters.get(f"{prefix}_item_group"):
-        frappe.throw(_("{0} Item Group is required").format(prefix.title()))
+    if not missing:
+        return None
+
+    return _("Please select: {0}").format(", ".join(missing))
 
 
 def get_target_identity(filters, prefix):
