@@ -46,8 +46,8 @@ def get_available_report_tools():
         },
         {
             "name": "customer_basket_gap",
-            "description": "Customers buying one item but not another item.",
-            "required_filters": ["company", "from_date", "to_date", "has_item_code", "missing_item_code"],
+            "description": "Customers buying one item or item group but not another item or item group.",
+            "required_filters": ["company", "from_date", "to_date", "has_target_type", "has_target", "missing_target_type", "missing_target"],
         },
         {
             "name": "dropped_item_customers",

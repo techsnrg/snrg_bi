@@ -10,14 +10,28 @@ def execute(filters=None):
 
 
 def validate_filters(filters):
-    required = ["company", "from_date", "to_date", "has_item_code", "missing_item_code"]
+    if not filters.get("has_target_type"):
+        filters.has_target_type = "Item"
+    if not filters.get("missing_target_type"):
+        filters.missing_target_type = "Item"
+
+    for fieldname in ("has_target_type", "missing_target_type"):
+        if filters.get(fieldname) not in ("Item", "Item Group"):
+            frappe.throw(_("{0} must be Item or Item Group").format(fieldname))
+
+    required = ["company", "from_date", "to_date"]
     missing = [field for field in required if not filters.get(field)]
     if missing:
         frappe.throw(_("Missing required filters: {0}").format(", ".join(missing)))
+
+    validate_target(filters, "has")
+    validate_target(filters, "missing")
+
     if filters.from_date > filters.to_date:
         frappe.throw(_("From Date cannot be after To Date"))
-    if filters.has_item_code == filters.missing_item_code:
-        frappe.throw(_("Buys Item and Does Not Buy Item must be different"))
+
+    if get_target_identity(filters, "has") == get_target_identity(filters, "missing"):
+        frappe.throw(_("Buys Target and Missing Target must be different"))
 
 
 def get_columns():
@@ -29,16 +43,19 @@ def get_columns():
         {"label": _("State"), "fieldname": "state", "fieldtype": "Data", "width": 130},
         {"label": _("Customer Group"), "fieldname": "customer_group", "fieldtype": "Link", "options": "Customer Group", "width": 150},
         {"label": _("Sales Person"), "fieldname": "sales_person", "fieldtype": "Data", "width": 180},
-        {"label": _("Buys Item Qty"), "fieldname": "has_item_qty", "fieldtype": "Float", "width": 120},
-        {"label": _("Buys Item Value"), "fieldname": "has_item_value", "fieldtype": "Currency", "width": 130},
-        {"label": _("Missing Item Qty"), "fieldname": "missing_item_qty", "fieldtype": "Float", "width": 130},
-        {"label": _("Last Bought Base Item"), "fieldname": "last_has_item_date", "fieldtype": "Date", "width": 150},
+        {"label": _("Buys Target Qty"), "fieldname": "has_item_qty", "fieldtype": "Float", "width": 130},
+        {"label": _("Buys Target Value"), "fieldname": "has_item_value", "fieldtype": "Currency", "width": 140},
+        {"label": _("Missing Target Qty"), "fieldname": "missing_item_qty", "fieldtype": "Float", "width": 140},
+        {"label": _("Last Bought Target"), "fieldname": "last_has_item_date", "fieldtype": "Date", "width": 150},
         {"label": _("Opportunity"), "fieldname": "opportunity", "fieldtype": "Data", "width": 120},
     ]
 
 
 def get_data(filters):
     conditions, params = get_customer_conditions(filters)
+    has_target_condition = get_target_condition(filters, "has")
+    missing_target_condition = get_target_condition(filters, "missing")
+
     query = f"""
         SELECT
             c.name AS customer,
@@ -67,7 +84,7 @@ def get_data(filters):
                 AND COALESCE(si.is_return, 0) = 0
                 AND si.company = %(company)s
                 AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
-                AND sii.item_code = %(has_item_code)s
+                AND {has_target_condition}
             GROUP BY si.customer
         ) has_sales ON has_sales.customer = c.name
         LEFT JOIN (
@@ -81,7 +98,7 @@ def get_data(filters):
                 AND COALESCE(si.is_return, 0) = 0
                 AND si.company = %(company)s
                 AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
-                AND sii.item_code = %(missing_item_code)s
+                AND {missing_target_condition}
             GROUP BY si.customer
         ) missing_sales ON missing_sales.customer = c.name
         LEFT JOIN (
@@ -103,9 +120,9 @@ def get_customer_conditions(filters):
         "company": filters.company,
         "from_date": filters.from_date,
         "to_date": filters.to_date,
-        "has_item_code": filters.has_item_code,
-        "missing_item_code": filters.missing_item_code,
     }
+    add_target_params(filters, params, "has")
+    add_target_params(filters, params, "missing")
     if filters.get("active_customers_only"):
         conditions.append("COALESCE(c.disabled, 0) = 0")
     for field, column in (
@@ -132,10 +149,54 @@ def get_customer_conditions(filters):
     return " AND ".join(conditions), params
 
 
+def validate_target(filters, prefix):
+    target_type = filters.get(f"{prefix}_target_type")
+    if target_type == "Item" and not filters.get(f"{prefix}_item_code"):
+        frappe.throw(_("{0} Item is required").format(prefix.title()))
+
+    if target_type == "Item Group" and not filters.get(f"{prefix}_item_group"):
+        frappe.throw(_("{0} Item Group is required").format(prefix.title()))
+
+
+def get_target_identity(filters, prefix):
+    target_type = filters.get(f"{prefix}_target_type")
+    if target_type == "Item":
+        return target_type, filters.get(f"{prefix}_item_code")
+    return target_type, filters.get(f"{prefix}_item_group")
+
+
+def add_target_params(filters, params, prefix):
+    target_type = filters.get(f"{prefix}_target_type")
+    if target_type == "Item":
+        params[f"{prefix}_item_code"] = filters.get(f"{prefix}_item_code")
+    else:
+        params[f"{prefix}_item_group"] = filters.get(f"{prefix}_item_group")
+
+
+def get_target_condition(filters, prefix):
+    target_type = filters.get(f"{prefix}_target_type")
+    if target_type == "Item":
+        return f"sii.item_code = %({prefix}_item_code)s"
+
+    return f"""
+        EXISTS (
+            SELECT 1
+            FROM `tabItem` target_item
+            INNER JOIN `tabItem Group` item_group
+                ON item_group.name = target_item.item_group
+            INNER JOIN `tabItem Group` selected_group
+                ON selected_group.name = %({prefix}_item_group)s
+            WHERE
+                target_item.name = sii.item_code
+                AND item_group.lft >= selected_group.lft
+                AND item_group.rgt <= selected_group.rgt
+        )
+    """
+
+
 def get_summary(data):
     return [
         {"label": _("Opportunities"), "value": len(data), "indicator": "Orange", "datatype": "Int"},
-        {"label": _("Base Item Qty"), "value": sum(row.get("has_item_qty") or 0 for row in data), "indicator": "Blue", "datatype": "Float"},
-        {"label": _("Base Item Value"), "value": sum(row.get("has_item_value") or 0 for row in data), "indicator": "Green", "datatype": "Currency"},
+        {"label": _("Base Target Qty"), "value": sum(row.get("has_item_qty") or 0 for row in data), "indicator": "Blue", "datatype": "Float"},
+        {"label": _("Base Target Value"), "value": sum(row.get("has_item_value") or 0 for row in data), "indicator": "Green", "datatype": "Currency"},
     ]
-

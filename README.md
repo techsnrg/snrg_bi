@@ -31,7 +31,7 @@ Sales source:
 ## Initial Report Family
 
 - `Customer Item Gap`: who buys / does not buy a selected item or item group.
-- `Customer Basket Gap`: customers buying one item but not another.
+- `Customer Basket Gap`: customers buying one item or item group but not another item or item group.
 - `Dropped Item Customers`: customers who bought an item earlier but stopped.
 - `Item Penetration by City`: city-wise penetration and opportunity count.
 - `Salesperson Item Opportunities`: salesperson-wise opportunity list.
