@@ -41,8 +41,8 @@ def get_available_report_tools():
     return [
         {
             "name": "customer_item_gap",
-            "description": "Customers buying or not buying a selected item in a selected market.",
-            "required_filters": ["company", "from_date", "to_date", "item_code"],
+            "description": "Customers buying or not buying a selected item or item group in a selected market.",
+            "required_filters": ["company", "from_date", "to_date", "target_type", "item_code_or_item_group"],
         },
         {
             "name": "customer_basket_gap",
@@ -65,4 +65,3 @@ def get_available_report_tools():
             "required_filters": ["company", "from_date", "to_date", "item_code"],
         },
     ]
-

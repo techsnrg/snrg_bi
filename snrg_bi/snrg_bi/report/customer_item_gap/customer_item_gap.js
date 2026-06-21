@@ -23,11 +23,26 @@ frappe.query_reports["Customer Item Gap"] = {
       default: frappe.datetime.get_today(),
     },
     {
+      fieldname: "target_type",
+      label: __("Target Type"),
+      fieldtype: "Select",
+      options: "Item\nItem Group",
+      default: "Item",
+      reqd: 1,
+    },
+    {
       fieldname: "item_code",
       label: __("Item Code"),
       fieldtype: "Link",
       options: "Item",
-      reqd: 1,
+      depends_on: "eval:doc.target_type == 'Item'",
+    },
+    {
+      fieldname: "item_group",
+      label: __("Item Group"),
+      fieldtype: "Link",
+      options: "Item Group",
+      depends_on: "eval:doc.target_type == 'Item Group'",
     },
     {
       fieldname: "territory",

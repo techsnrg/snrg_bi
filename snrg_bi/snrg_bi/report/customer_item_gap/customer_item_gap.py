@@ -15,10 +15,22 @@ def execute(filters=None):
 
 
 def validate_filters(filters):
-    required = ["company", "from_date", "to_date", "item_code"]
+    if not filters.get("target_type"):
+        filters.target_type = "Item"
+
+    if filters.target_type not in ("Item", "Item Group"):
+        frappe.throw(_("Target Type must be Item or Item Group"))
+
+    required = ["company", "from_date", "to_date"]
     missing = [field for field in required if not filters.get(field)]
     if missing:
         frappe.throw(_("Missing required filters: {0}").format(", ".join(missing)))
+
+    if filters.target_type == "Item" and not filters.get("item_code"):
+        frappe.throw(_("Item Code is required when Target Type is Item"))
+
+    if filters.target_type == "Item Group" and not filters.get("item_group"):
+        frappe.throw(_("Item Group is required when Target Type is Item Group"))
 
     if filters.from_date > filters.to_date:
         frappe.throw(_("From Date cannot be after To Date"))
@@ -56,10 +68,10 @@ def get_columns():
         {"label": _("State"), "fieldname": "state", "fieldtype": "Data", "width": 130},
         {"label": _("Customer Group"), "fieldname": "customer_group", "fieldtype": "Link", "options": "Customer Group", "width": 150},
         {"label": _("Sales Person"), "fieldname": "sales_person", "fieldtype": "Data", "width": 180},
-        {"label": _("Bought Item"), "fieldname": "bought_item", "fieldtype": "Data", "width": 100},
+        {"label": _("Bought Target"), "fieldname": "bought_item", "fieldtype": "Data", "width": 110},
         {"label": _("Qty Bought"), "fieldname": "qty_bought", "fieldtype": "Float", "width": 110},
         {"label": _("Sales Value"), "fieldname": "sales_value", "fieldtype": "Currency", "width": 130},
-        {"label": _("Last Item Purchase Date"), "fieldname": "last_purchase_date", "fieldtype": "Date", "width": 160},
+        {"label": _("Last Target Purchase Date"), "fieldname": "last_purchase_date", "fieldtype": "Date", "width": 170},
         {"label": _("Other Items Bought"), "fieldname": "other_items_bought", "fieldtype": "Data", "width": 260},
         {"label": _("Status"), "fieldname": "status", "fieldtype": "Data", "width": 120},
     ]
@@ -68,6 +80,8 @@ def get_columns():
 def get_data(filters):
     conditions, params = get_customer_conditions(filters)
     params["dropped_from_date"] = add_months(filters.from_date, -filters.dropped_lookback_months)
+    target_condition = get_target_condition(filters)
+    non_target_condition = get_non_target_condition(filters)
 
     query = f"""
         SELECT
@@ -110,7 +124,7 @@ def get_data(filters):
                 AND COALESCE(si.is_return, 0) = 0
                 AND si.company = %(company)s
                 AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
-                AND sii.item_code = %(item_code)s
+                AND {target_condition}
             GROUP BY si.customer
         ) item_sales ON item_sales.customer = c.name
         LEFT JOIN (
@@ -128,7 +142,7 @@ def get_data(filters):
                 AND COALESCE(si.is_return, 0) = 0
                 AND si.company = %(company)s
                 AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
-                AND sii.item_code != %(item_code)s
+                AND {non_target_condition}
             GROUP BY si.customer
         ) other_items ON other_items.customer = c.name
         LEFT JOIN (
@@ -143,7 +157,7 @@ def get_data(filters):
                 AND si.company = %(company)s
                 AND si.posting_date >= %(dropped_from_date)s
                 AND si.posting_date < %(from_date)s
-                AND sii.item_code = %(item_code)s
+                AND {target_condition}
             GROUP BY si.customer
         ) prior_sales ON prior_sales.customer = c.name
         WHERE {conditions}
@@ -162,8 +176,12 @@ def get_customer_conditions(filters):
         "company": filters.company,
         "from_date": filters.from_date,
         "to_date": filters.to_date,
-        "item_code": filters.item_code,
     }
+
+    if filters.target_type == "Item":
+        params["item_code"] = filters.item_code
+    else:
+        params["item_group"] = filters.item_group
 
     if filters.get("active_customers_only"):
         conditions.append("COALESCE(c.disabled, 0) = 0")
@@ -211,6 +229,46 @@ def get_customer_conditions(filters):
         conditions.append("prior_sales.last_purchase_date IS NULL")
 
     return " AND ".join(conditions), params
+
+
+def get_target_condition(filters):
+    if filters.target_type == "Item":
+        return "sii.item_code = %(item_code)s"
+
+    return """
+        EXISTS (
+            SELECT 1
+            FROM `tabItem` target_item
+            INNER JOIN `tabItem Group` item_group
+                ON item_group.name = target_item.item_group
+            INNER JOIN `tabItem Group` selected_group
+                ON selected_group.name = %(item_group)s
+            WHERE
+                target_item.name = sii.item_code
+                AND item_group.lft >= selected_group.lft
+                AND item_group.rgt <= selected_group.rgt
+        )
+    """
+
+
+def get_non_target_condition(filters):
+    if filters.target_type == "Item":
+        return "sii.item_code != %(item_code)s"
+
+    return """
+        NOT EXISTS (
+            SELECT 1
+            FROM `tabItem` target_item
+            INNER JOIN `tabItem Group` item_group
+                ON item_group.name = target_item.item_group
+            INNER JOIN `tabItem Group` selected_group
+                ON selected_group.name = %(item_group)s
+            WHERE
+                target_item.name = sii.item_code
+                AND item_group.lft >= selected_group.lft
+                AND item_group.rgt <= selected_group.rgt
+        )
+    """
 
 
 def get_summary(data):

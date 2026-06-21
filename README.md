@@ -30,7 +30,7 @@ Sales source:
 
 ## Initial Report Family
 
-- `Customer Item Gap`: who buys / does not buy a selected item.
+- `Customer Item Gap`: who buys / does not buy a selected item or item group.
 - `Customer Basket Gap`: customers buying one item but not another.
 - `Dropped Item Customers`: customers who bought an item earlier but stopped.
 - `Item Penetration by City`: city-wise penetration and opportunity count.
@@ -52,9 +52,9 @@ The AI layer should call these approved tools rather than querying raw ERPNext t
 
 ## Customer Item Gap Status Logic
 
-- `Buyer`: bought the selected item during the selected report period.
-- `Stopped Buying`: did not buy the selected item during the report period, but bought it within the selected dropped lookback window before the report period.
-- `Opportunity`: did not buy the selected item during the report period and did not buy it within the selected dropped lookback window.
+- `Buyer`: bought the selected item or item group during the selected report period.
+- `Stopped Buying`: did not buy the selected item or item group during the report period, but bought it within the selected dropped lookback window before the report period.
+- `Opportunity`: did not buy the selected item or item group during the report period and did not buy it within the selected dropped lookback window.
 
 The dropped lookback window supports 1, 2, 3, 6, 9, or 12 months. This prevents very old purchases from years ago being treated as current dropped customers.
 
